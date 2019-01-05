@@ -1,38 +1,85 @@
-Role Name
-=========
+sa-gitlab-runner-win
+====================
 
-A brief description of the role goes here.
+[![Build Status](https://travis-ci.org/softasap/sa-gitlab-runner-win.svg?branch=master)](https://travis-ci.org/softasap/sa-gitlab-runner-win)
 
-Requirements
-------------
+Note: Remote windows should be prepared for ansible provisioning in advance. See https://github.com/softasap/sa-win for details.
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+```pwsh
+Set-ExecutionPolicy Bypass -Scope Process -Force;
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/softasap/sa-win/master/bootstrap.ps1'))
+```
 
-Role Variables
---------------
+See box-example for play example.
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Example of usage:
 
-Dependencies
-------------
+Simple
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+```YAML
 
-Example Playbook
-----------------
+     - {
+         role: "sa-gitlab-runner-win"
+       }
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+```
 
-License
--------
+Advanced
 
-BSD
+```YAML
 
-Author Information
-------------------
+     - {
+         role: "sa-gitlab-runner-win",
+         gitlab_runner_ci_url: https://gitlab.com/,
+         gitlab_runner_registration_token: SPECIFY,
+         gitlab_builds_dir: "c:/workspaces/builds",
+         gitlab_caches_dir: "c:/workspaces/caches",
+         gitlab_shell: cmd, # Select bash, cmd or powershell [%RUNNER_SHELL%]
+         gitlab_environment: ["GIT_SSL_NO_VERIFY=true"],
+         gitlab_runner_description: "{{ ansible_hostname }} - Experimental windows runner"
+       }
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+
+```
+
+
+
+Usage with ansible galaxy workflow
+----------------------------------
+
+If you installed the `sa-gitlab-runner-win` role using the command
+
+
+`
+   ansible-galaxy install softasap.sa-gitlab-runner-win
+`
+
+the role will be available in the folder `library/softasap.sa-gitlab-runner-win`
+Please adjust the path accordingly.
+
+```YAML
+
+     - {
+         role: "softasap.sa-gitlab-runner-win"
+       }
+
+```
+
+
+
+
+Copyright and license
+---------------------
+
+Code is dual licensed under the [BSD 3 clause] (https://opensource.org/licenses/BSD-3-Clause) and the [MIT License] (http://opensource.org/licenses/MIT). Choose the one that suits you best.
+
+Reach us:
+
+Subscribe for roles updates at [FB] (https://www.facebook.com/SoftAsap/)
+
+Join gitter discussion channel at [Gitter](https://gitter.im/softasap)
+
+Discover other roles at  http://www.softasap.com/roles/registry_generated.html
+
+visit our blog at http://www.softasap.com/blog/archive.html 

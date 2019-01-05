@@ -1,0 +1,4 @@
+[submodule "roles/sa-gitlab-runner-win"]
+        path = roles/sa-gitlab-runner-win
+        url = https://github.com/softasap/sa-gitlab-runner-win.git
+

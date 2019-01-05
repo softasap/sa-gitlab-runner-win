@@ -1,2 +1,12 @@
 ---
 # defaults file for sa-gitlab-runner-win
+
+gitlab_runner_ci_url: https://gitlab.com/
+gitlab_runner_registration_token: SPECIFY
+gitlab_builds_dir: "c:/workspaces/builds"
+gitlab_caches_dir: "c:/workspaces/caches"
+gitlab_shell: cmd # Select bash, cmd or powershell [%RUNNER_SHELL%]
+gitlab_environment: ["GIT_SSL_NO_VERIFY=true"]
+gitlab_runner_description: "{{ ansible_hostname }} - Experimental windows runner"
+
+#gitlab_environment: ["CI_DEBUG_TRACE=true", "GIT_TRACE=2", "GIT_CURL_VERBOSE=1", "GIT_SSL_NO_VERIFY=true"]
