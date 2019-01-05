@@ -1,0 +1,16 @@
+---
+- hosts: www
+  gather_facts: False
+
+    - name: gather facts
+      setup:
+
+
+  roles:
+     - {
+        role: "sa-gitlab-runner-win"
+       }
+
+  tasks:
+
+    - debug: msg="Tasks section"
