@@ -1,2 +1,2 @@
-- src: softasap.sa-gitlab-runner-win
-  name: sa-gitlab-runner-win
+- src: softasap.sa_gitlab_runner_win
+  name: sa_gitlab_runner_win
