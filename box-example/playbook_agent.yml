@@ -1,6 +1,8 @@
 ---
-- hosts: www
+- hosts: windows
   gather_facts: False
+
+  pre_tasks:
 
     - name: gather facts
       setup:
@@ -8,7 +10,8 @@
 
   roles:
      - {
-        role: "sa-gitlab-runner-win"
+        role: "sa_gitlab_runner_win",
+        gitlab_runner_registration_token: "SPECIFY"
        }
 
   tasks:

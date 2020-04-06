@@ -1,8 +1,8 @@
 [windows]
-192.168.2.145
+192.168.3.140
 
 [windows:vars]
-ansible_user=administrator
-ansible_password=windowsadminpassword
+ansible_user=ieuser
+ansible_password=Passw0rd!
 ansible_connection=winrm
 ansible_winrm_server_cert_validation=ignore

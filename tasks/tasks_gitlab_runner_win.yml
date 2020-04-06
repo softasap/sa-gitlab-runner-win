@@ -29,14 +29,14 @@
     win_shell:
       C:\GitLab-Runner\gitlab-runner.exe register --non-interactive `
        --url {{ gitlab_runner_ci_url }} `
-       --registration-token {{ gitlab_runner_registration_token_ }} `
+       --registration-token {{ gitlab_runner_registration_token }} `
        --executor shell `
        --description "{{ gitlab_runner_description }}" `
        --builds-dir "{{ gitlab_builds_dir }}" `
        --cache-dir "{{ gitlab_caches_dir }}" `
        --shell {{ gitlab_shell }} `
-       --tag-list {{ gitlab_tags }} `
-       {{ "--env \"%s\"" | format(gitlab_environment) }}
+       --tag-list {{ gitlab_tags | default("windows") }} `
+       {{ "--env '%s'" | format(gitlab_environment) }}
 
   - name: Install runner as service
     win_command: C:\GitLab-Runner\gitlab-runner.exe install
