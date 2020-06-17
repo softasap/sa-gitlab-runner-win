@@ -1,0 +1,8 @@
+
+New-Item c:/gitlab-runner -Type Directory -Force
+
+$paramIwr = @{
+Uri = "https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-windows-amd64.exe";
+OutFile = "c:/gitlab-runner/gitlab-runner.exe"
+}
+Invoke-WebRequest @paramIwr
