@@ -120,7 +120,7 @@ Write-Host "$serviceName not found"
 $parameters="--non-interactive --url " + $gitlabUrl + " --registration-token " + $gitRegistrationToken
 
 $parameters += " --executor " + '"' + $gitlab_executor + '"'
-If ([string]::IsNullOrEmpty($gitlab_shell)) {
+If (![string]::IsNullOrEmpty($gitlab_shell)) {
 $parameters += " --shell " + '"' + $gitlab_shell + '"'
 }
 $parameters += " --description " + '"' + $gitlab_runner_description + '"'
