@@ -35,7 +35,7 @@ Advanced
          gitlab_runner_registration_token: SPECIFY,
          gitlab_builds_dir: "c:/workspaces/builds",
          gitlab_caches_dir: "c:/workspaces/caches",
-         gitlab_shell: cmd, # Select bash, cmd or powershell [%RUNNER_SHELL%]
+         gitlab_shell: powershell, # Select bash or powershell [%RUNNER_SHELL%]
          gitlab_environment: ["GIT_SSL_NO_VERIFY=true"],
          gitlab_runner_description: "{{ ansible_hostname }} - Experimental windows runner"
        }
