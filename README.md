@@ -35,7 +35,7 @@ Advanced
          gitlab_runner_registration_token: SPECIFY,
          gitlab_builds_dir: "c:/workspaces/builds",
          gitlab_caches_dir: "c:/workspaces/caches",
-         gitlab_shell: powershell, # Select bash, cmd or powershell [%RUNNER_SHELL%]
+         gitlab_shell: powershell, # Select bash or powershell [%RUNNER_SHELL%]
          gitlab_environment: ["GIT_SSL_NO_VERIFY=true"],
          gitlab_runner_description: "{{ ansible_hostname }} - Experimental windows runner"
        }
@@ -179,6 +179,50 @@ or you might also have similar to linux system whoami utility already
 ```sh
 whoami
 ```
+
+Using as a part of AMI
+----------------------
+
+You are about to install role setting `option_gitlab_register_runner: false`
+
+```YAML
+
+     - {
+         role: "sa-gitlab-runner-win",
+         gitlab_runner_ci_url: https://gitlab.com/,
+         gitlab_runner_registration_token: SPECIFY,
+         gitlab_builds_dir: "c:/workspaces/builds",
+         gitlab_caches_dir: "c:/workspaces/caches",
+         gitlab_shell: powershell, # Select bash or powershell [%RUNNER_SHELL%]
+         gitlab_environment: ["GIT_SSL_NO_VERIFY=true"],
+         gitlab_runner_description: "{{ ansible_hostname }} - Experimental windows runner"
+       }
+```
+
+later, on your ami startup script you can 
+
+```ps1
+
+Set-Location c:\gitlab-runner
+
+Import-Module register-runner.ps1
+
+# register default runner with powershell
+register-runner -gitRegistrationToken SPECIFY  -hostTags "windows"
+
+# register oldschool runner with windows cmd
+register-runner -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
+
+# install runner service as localsystem
+gitlab-service-register
+
+# install runner service on behalf of specific user
+gitlab-service-register -gitlab_runner_username "ieuser" -gitlab_runner_pass "Passw0rd!"
+
+```
+
+nearby there is also script for a self signed gitlab runner,
+as well as version update.
 
 
 Usage with ansible galaxy workflow
