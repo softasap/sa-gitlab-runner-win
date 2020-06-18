@@ -205,18 +205,19 @@ later, on your ami startup script you can
 
 Set-Location c:\gitlab-runner
 
-Import-Module register-runner.ps1
+Import-Module ./register-runner.ps1
 
 # register default runner with powershell
-register-runner -gitRegistrationToken SPECIFY  -hostTags "windows"
+gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows"
 
 # register oldschool runner with windows cmd
-register-runner -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
+gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
 
 # install runner service as localsystem
 gitlab-service-register
 
 # install runner service on behalf of specific user
+Grant-LogonAsService "$env:COMPUTERNAME\ieuser"
 gitlab-service-register -gitlab_runner_username "ieuser" -gitlab_runner_pass "Passw0rd!"
 
 ```

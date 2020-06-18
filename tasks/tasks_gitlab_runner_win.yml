@@ -50,7 +50,7 @@
   - name: Template batches
     win_template:
       src: "{{ item }}.j2"
-      dest: "C:\GitLab-Runner\{{ item }}"
+      dest: "C:\\GitLab-Runner\\{{ item }}"
     with_items:
       - "getrunner.ps1"
       - "register-custom-cert.ps1"
