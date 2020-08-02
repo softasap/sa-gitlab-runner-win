@@ -1,0 +1,13 @@
+Add-Content -Value "192.168.111.184`tgitlab.copdips.local" -Path C:\Windows\system32\drivers\etc\hosts
+
+# Add the gitlab self-signed certificate to runner's cert store.
+$gitlabUrl = "https://gitlab.copdips.local"
+$localCertPath = "$env:temp\$($gitlabUrl.Split('/')[2]).crt"
+$webRequest = [Net.WebRequest]::Create($gitlabUrl)
+try { $webRequest.GetResponse() } catch {} # try catch is useful if ssl cert is not valid. ServicePoint is always kept even for invalid ssl cert.
+$cert = $webRequest.ServicePoint.Certificate
+$bytes = $cert.Export("Cert")
+Set-content -value $bytes -encoding byte -path $localCertPath
+
+# https://docs.microsoft.com/en-us/windows/desktop/seccertenroll/about-certificate-directory
+Import-Certificate -FilePath $localCertPath -CertStoreLocation Cert:\LocalMachine\Root

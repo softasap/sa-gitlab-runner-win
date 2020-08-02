@@ -1,0 +1,290 @@
+# register default runner with powershell
+# register-runner -gitRegistrationToken SPECIFY  -hostTags "windows"
+
+# register oldschool runner with windows cmd
+# register-runner -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
+
+# install runner service as localsystem
+# gitlab-service-register
+
+# install runner service on behalf of specific user
+# gitlab-service-register -gitlab_runner_username "ieuser" -gitlab_runner_pass "Passw0rd!"
+
+new-module -name GitlabRunnerRegister -scriptblock {
+[Console]::OutputEncoding = New-Object -typename System.Text.ASCIIEncoding
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls,Tls11,Tls12'
+
+function GitlabRunnerGetSelfSignedCert {
+param (
+[string]$gitlabUrl = "https://gitlab.voronenko.net",
+[string]$etcHostsEntry = "192.168.3.299`gitlab.voronenko.net"
+)
+
+If (![string]::IsNullOrEmpty($hostTags)) {
+Add-Content -Value $etcHostsEntry -Path C:\Windows\system32\drivers\etc\hosts
+}
+
+$localCertPath = "$env:temp\$($gitlabUrl.Split('/')[2]).crt"
+
+$webRequest = [Net.WebRequest]::Create($gitlabUrl)
+try { $webRequest.GetResponse() } catch {} # try catch is useful if ssl cert is not valid. ServicePoint is always kept even for invalid ssl cert.
+$cert = $webRequest.ServicePoint.Certificate
+$bytes = $cert.Export("Cert")
+Set-content -value $bytes -encoding byte -path $localCertPath
+# https://docs.microsoft.com/en-us/windows/desktop/seccertenroll/about-certificate-directory
+Import-Certificate -FilePath $localCertPath -CertStoreLocation Cert:\LocalMachine\Root
+
+}
+
+function GitlabRunnerRegister {
+param (
+
+[ValidateNotNullOrEmpty()]
+[string]$gitlabUrl = "https://gitlab.com/",
+
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[string]$gitRegistrationToken,
+
+[Parameter(Mandatory = $false)]
+[ValidateNotNullOrEmpty()]
+[string]$gitlab_runner_name = $env:computername,
+
+[Parameter(Mandatory = $false)]
+[string]$gitlab_runner_description = $env:computername  + " Experimental windows runner",
+
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[string]$hostTags = "windows",
+
+[Parameter(Mandatory = $false)]
+[ValidateNotNullOrEmpty()]
+[string] $gitlab_builds_dir = "c:/workspaces/builds",
+
+[Parameter(Mandatory = $false)]
+[ValidateNotNullOrEmpty()]
+[string] $gitlab_caches_dir = "c:/workspaces/caches",
+
+[Parameter(Mandatory = $false)]
+[ValidateNotNullOrEmpty()]
+[string] $gitlab_executor = "powershell",
+
+[Parameter(Mandatory = $false)]
+[ValidateNotNullOrEmpty()]
+[string] $gitlab_shell = "",
+
+[Parameter(Mandatory = $false)]
+$gitlab_environment = @('GIT_SSL_NO_VERIFY=true'),
+
+[Parameter(Mandatory = $false)]
+[string]$skipSSLValidation = "false"
+
+)
+
+Write-Host "Script will register gitlab runner for $gitlabUrl with tags $hostTags runner $gitlab_shell"
+
+Set-Location c:\gitlab-runner
+
+# Ensure the runner is stopped before the registration.
+$serviceName = 'gitlab-runner'
+Write-Host "Stopping $serviceName in case if it is already running"
+
+If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
+
+If ((Get-Service $serviceName).Status -eq 'Running') {
+
+Stop-Service $serviceName
+Write-Host "Stopping $serviceName"
+./gitlab-runner.exe stop
+./gitlab-runner.exe status
+
+} Else {
+
+Write-Host "$serviceName found, but it is not running."
+./gitlab-runner.exe status
+
+}
+
+} Else {
+
+Write-Host "$serviceName not found"
+
+}
+
+./gitlab-runner.exe status
+
+# Install without any other params will install a windows service named gitlab-runner running under the built-in system account.
+#Set-Location c:\gitlab-runner
+#./gitlab-runner.exe install
+
+$parameters="--non-interactive --url " + $gitlabUrl + " --registration-token " + $gitRegistrationToken
+
+$parameters += " --executor " + '"' + $gitlab_executor + '"'
+If (![string]::IsNullOrEmpty($gitlab_shell)) {
+$parameters += " --shell " + '"' + $gitlab_shell + '"'
+}
+$parameters += " --description " + '"' + $gitlab_runner_description + '"'
+$defaultHostTags = "windows"
+
+If ([string]::IsNullOrEmpty($hostTags)) {
+$hostTags = $defaultHostTags
+} Else {
+$hostTags = "$hostTags"
+}
+
+$parameters += " --tag-list " + '"' + $hostTags + '"'
+
+$parameters += " --builds-dir  " + '"' + $gitlab_builds_dir + '"'
+
+$parameters += " --cache-dir  " + '"' + $gitlab_caches_dir + '"'
+
+
+Write-Host "======================================================="
+Write-Host "gitlab-runner.exe register $parameters"
+
+iex "./gitlab-runner.exe register $parameters"
+
+If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
+./gitlab-runner.exe start
+}
+}
+
+
+function Grant-LogonAsService {
+    param($accountToAdd)
+    # written by Ingo Karstein, https://blog.kenaro.com/2012/10/12/powershell-script-to-add-account-to-allow-logon-locally-privilege-on-local-security-policy/
+    # Original: https://gallery.technet.microsoft.com/PowerShell-script-to-add-b005e0f6
+    # v1.0, 01/03/2014
+
+    ## <--- Configure here
+
+    if( [string]::IsNullOrEmpty($accountToAdd) ) {
+        Write-Host "no account specified"
+        exit
+    }
+
+    ## ---> End of Config
+
+    $sidstr = $null
+    try {
+        $ntprincipal = new-object System.Security.Principal.NTAccount "$accountToAdd"
+        $sid = $ntprincipal.Translate([System.Security.Principal.SecurityIdentifier])
+        $sidstr = $sid.Value.ToString()
+    } catch {
+        $sidstr = $null
+    }
+
+    Write-Host "Account: $($accountToAdd)" -ForegroundColor DarkCyan
+
+    if( [string]::IsNullOrEmpty($sidstr) ) {
+        Write-Host "Account not found!" -ForegroundColor Red
+        exit -1
+    }
+
+    Write-Host "Account SID: $($sidstr)" -ForegroundColor DarkCyan
+
+    $tmp = [System.IO.Path]::GetTempFileName()
+
+    Write-Host "Export current Local Security Policy" -ForegroundColor DarkCyan
+    secedit.exe /export /cfg "$($tmp)"
+
+    $c = Get-Content -Path $tmp
+
+    $currentSetting = ""
+
+    foreach($s in $c) {
+        if( $s -like "SeServiceLogonRight*") {
+            $x = $s.split("=",[System.StringSplitOptions]::RemoveEmptyEntries)
+            $currentSetting = $x[1].Trim()
+        }
+    }
+
+    if( $currentSetting -notlike "*$($sidstr)*" ) {
+        # Write-Host "Modify Setting ""Allow Logon Locally""" -ForegroundColor DarkCyan
+        Write-Host "Modify Setting ""Logon as a Service""" -ForegroundColor DarkCyan
+
+        if( [string]::IsNullOrEmpty($currentSetting) ) {
+            $currentSetting = "*$($sidstr)"
+        } else {
+            $currentSetting = "*$($sidstr),$($currentSetting)"
+        }
+
+        Write-Host "$currentSetting"
+
+        $outfile = @"
+[Unicode]
+Unicode=yes
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+[Privilege Rights]
+SeServiceLogonRight = $($currentSetting)
+"@
+
+        $tmp2 = [System.IO.Path]::GetTempFileName()
+
+
+        Write-Host "Import new settings to Local Security Policy" -ForegroundColor DarkCyan
+        $outfile | Set-Content -Path $tmp2 -Encoding Unicode -Force
+
+        #notepad.exe $tmp2
+        Push-Location (Split-Path $tmp2)
+
+        try {
+            secedit.exe /configure /db "secedit.sdb" /cfg "$($tmp2)" /areas USER_RIGHTS
+            #write-host "secedit.exe /configure /db ""secedit.sdb"" /cfg ""$($tmp2)"" /areas USER_RIGHTS "
+        } finally {
+            Pop-Location
+        }
+    } else {
+        # Write-Host "NO ACTIONS REQUIRED! Account already in ""Allow Logon Locally""" -ForegroundColor DarkCyan
+        Write-Host "NO ACTIONS REQUIRED! Account already in ""Logon as a Service""" -ForegroundColor DarkCyan
+    }
+
+    Write-Host "Done." -ForegroundColor DarkCyan
+}
+
+function GitlabServiceRegister {
+param (
+[Parameter(Mandatory = $false)]
+[string] $gitlab_runner_username = "",
+
+[Parameter(Mandatory = $false)]
+[string] $gitlab_runner_pass = "",
+
+[Parameter(Mandatory = $false)]
+[string] $gitlab_runner_domain = $env:computername
+
+)
+
+$installparameters =""
+
+If (![string]::IsNullOrEmpty($gitlab_runner_username)) {
+Write-Host "gitlab-runner.exe install on behalf of specific user"
+$installparameters += " --user $gitlab_runner_domain" + '\\' + $gitlab_runner_username + " --password " + $gitlab_runner_pass
+Grant-LogonAsService "$gitlab_runner_domain\$gitlab_runner_username"
+} else {
+Write-Host "gitlab-runner.exe install on behalf of specific user"
+}
+
+Set-Location c:\gitlab-runner
+Write-Host "./gitlab-runner.exe install $installparameters"
+iex "./gitlab-runner.exe install $installparameters"
+./gitlab-runner.exe start
+}
+
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+$PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
+
+set-alias grant-service-login -value Grant-LogonAsService
+set-alias gitlab-runner-register -value GitlabRunnerRegister
+set-alias gitlab-service-register -value GitlabServiceRegister
+set-alias gitlab-cert-install -value GitlabRunnerGetSelfSignedCert
+
+export-modulemember -function 'Grant-LogonAsService' -alias 'grant-service-login'
+export-modulemember -function 'GitlabServiceRegister' -alias 'gitlab-service-register'
+export-modulemember -function 'GitlabRunnerRegister' -alias 'gitlab-runner-register'
+export-modulemember -function 'GitlabRunnerGetSelfSignedCert' -alias 'gitlab-cert-install'
+}
