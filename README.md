@@ -209,9 +209,26 @@ Import-Module ./register-runner.ps1
 
 # register default runner with powershell
 gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows"
-
+# OR
 # register oldschool runner with windows cmd
 gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
+
+iex "cat .\config.toml | grep token"
+if($lastexitcode -ne '0')
+{
+    while($lastexitcode -ne '0')
+    {
+        Start-Sleep -s 5
+        Write-Host "Retrying registration...."
+        # register default runner with powershell
+        gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows"
+        # OR
+        # register oldschool runner with windows cmd
+        gitlab-runner-register -gitRegistrationToken SPECIFY  -hostTags "windows" -gitlab_executor "shell" -gitlab_shell "cmd"
+        iex "cat .\config.toml | grep token"
+    }
+}
+Write-Host "Registration complete...."
 
 # install runner service as localsystem
 gitlab-service-register
