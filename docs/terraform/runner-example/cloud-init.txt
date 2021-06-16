@@ -1,0 +1,28 @@
+<powershell>
+Set-Location c:\gitlab-runner
+Import-Module ./register-runner.ps1
+
+$env:CACHE_TYPE = 's3'
+$env:CACHE_SHARED = 'true'
+$env:CACHE_S3_SERVER_ADDRESS = 's3.eu-west-1.amazonaws.com'
+$env:CACHE_S3_BUCKET_NAME= 'windows-gitlab-runner-cache-bucket-name'
+$env:CACHE_S3_BUCKET_LOCATION = 'eu-west-1'
+$env:CACHE_PATH = 'cache'
+
+# register oldschool runner with windows cmd
+gitlab-runner-register -gitRegistrationToken YOURTOKEN -hostTags "TAG1,TAG2" -gitlab_executor "shell" -gitlab_shell "cmd"
+iex "cat .\config.toml | grep token"
+if($lastexitcode -ne '0')
+{
+    while($lastexitcode -ne '0')
+    {
+        Start-Sleep -s 7
+        Write-Host "Retrying registration...."
+        gitlab-runner-register -gitRegistrationToken YOURTOKEN -hostTags "TAG1,TAG2" -gitlab_executor "shell" -gitlab_shell "cmd"
+        iex "cat .\config.toml | grep token"
+    }
+}
+Write-Host "Registration complete...."
+# install runner service on behalf of specific user
+gitlab-service-register -gitlab_runner_username "runner_win_user" -gitlab_runner_pass "runner_win_password"
+</powershell>
